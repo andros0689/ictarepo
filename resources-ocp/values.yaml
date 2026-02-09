@@ -60,11 +60,11 @@ deploy:
   envFrom:
     enabled: false
 
-  # applicationProperties:
-  #   enabled: false
-  #   mountPath: /deployments/config/
-  #   properties: |-
-  #     ## Properties go here
+  applicationProperties:
+    enabled: false
+    # mountPath: /deployments/config/
+    # properties: |-
+    #   ## Properties go here
 
   # volumes:
   #   - name: kafka-cert-volume

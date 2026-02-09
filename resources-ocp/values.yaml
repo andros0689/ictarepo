@@ -1,19 +1,19 @@
 app:
-  name: ma-test-service
+  name: testing-compilers
   labels:
-    app: ma-test-service
-    app.kubernetes.io/part-of: ma-test-service
-    app.kubernetes.io/instance: ma-test-service
-    app.kubernetes.io/version: "1.0.0-DEV"
-    app.openshift.io/runtime: Quarkus
-    app.kubernetes.io/component: ma-test-service
-    app.kubernetes.io/name: ma-test-service
-    app.openshift.io/runtime-version: "2.2"
+    app: testing-compilers
+    app.kubernetes.io/part-of: testing-compilers
+    app.kubernetes.io/instance: testing-compilers
+    app.kubernetes.io/version: "0.0.1-SNAPSHOT"
+    app.openshift.io/runtime: SpringBoot
+    app.kubernetes.io/component: testing-compilers
+    app.kubernetes.io/name: testing-compilers
+    app.openshift.io/runtime-version: "4.0.2"
 
 image:
-  name: registry-quay-registry-quay.apps.epico-mgmt-col-1.tmve.local/telefonica-pipelines/ma-test-service
-  tag: 1.0.8
-  stableTag: 1.0.8
+  name: default-route-openshift-image-registry.apps.icta.sandbox2670.opentlc.com/icta-deployments/testing-compilers
+  tag: 0.0.1-SNAPSHOT
+  stableTag: 0.0.1-SNAPSHOT
 
 deploy:
   enabledServerless: true
@@ -55,100 +55,43 @@ deploy:
 
   env:
   - name: TZ
-    value: America/Caracas
-  - name: QUARKUS_HTTP_PORT
-    value: '8080'    
-  - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
-    valueFrom:
-      secretKeyRef:
-        name: connection-telemetry
-        key: url
-  - name: KAFKA_SERVER
-    valueFrom:
-      secretKeyRef:
-        name: connection-kafka
-        key: url
-  - name: KAFKA_SSL_TRUSTORE_LOCATION
-    value: /etc/ssl/certs/kafka/client.truststore.jks
-  - name: KAFKA_SSL_TRUSTORE_TYPE
-    value: JKS
-  - name: KAFKA_SSL_KEYSTORE_LOCATION
-    value: /etc/ssl/certs/kafka/client.truststore.jks
-  - name: KAFKA_SSL_KEYSTORE_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: kafka-jks-secret
-        key: jks-password
-  - name: KAFKA_SSL_TRUSTORE_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: kafka-jks-secret
-        key: jks-password
-  - name: KAFKA_AUTO_COMMIT
-    value: 'false'
-  - name: KAFKA_MANUAL_COMMIT
-    value: 'true'                                                
-  - name: KAFKA_DELIVERY_TIMEOUT_MS
-    value: '10000'
-  - name: KAFKA_REQUEST_TIMEOUT_MS
-    value: '10000'
-  - name: KAFKA_MAX_BLOCK_MS
-    value: '10000'   
-  - name: CONFIG_PATH_ENTIDADES
-    value: '/etc/config/entidades/entidades.json'
-  - name: QUARKUS_DATASOURCE_JDBC_URL
-    valueFrom:
-      secretKeyRef:
-        name: connection-bd-postgres
-        key: url_connection_ods_schema
-  - name: QUARKUS_DATASOURCE_USERNAME
-    valueFrom:
-      secretKeyRef:
-        name: connection-bd-postgres
-        key: user_ods_consumer 
-  - name: QUARKUS_DATASOURCE_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        name: connection-bd-postgres
-        key: pass_ods
-  - name: QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT
-    value: "3S"   
+    value: America/Bogota
                               
   envFrom:
     enabled: false
 
-  applicationProperties:
-    enabled: false
-    mountPath: /deployments/config/
-    properties: |-
-      ## Properties go here
+  # applicationProperties:
+  #   enabled: false
+  #   mountPath: /deployments/config/
+  #   properties: |-
+  #     ## Properties go here
 
-  volumes:
-    - name: kafka-cert-volume
-      secret:
-        secretName: kafka-jks-secret
-        items:
-          - key: jks-file
-            path: client.truststore.jks
-    - name: config-volume
-      secret:
-        secretName: kafka-consumer
-        items:
-          - key: entidades
-            path: entidades.json
+  # volumes:
+  #   - name: kafka-cert-volume
+  #     secret:
+  #       secretName: kafka-jks-secret
+  #       items:
+  #         - key: jks-file
+  #           path: client.truststore.jks
+  #   - name: config-volume
+  #     secret:
+  #       secretName: kafka-consumer
+  #       items:
+  #         - key: entidades
+  #           path: entidades.json
 
-  volumeMounts:
-      - name: kafka-cert-volume
-        mountPath: /etc/ssl/certs/kafka
-        readOnly: true 
-      - name: config-volume
-        mountPath: /etc/config/entidades
-        readOnly: true 
+  # volumeMounts:
+  #     - name: kafka-cert-volume
+  #       mountPath: /etc/ssl/certs/kafka
+  #       readOnly: true 
+  #     - name: config-volume
+  #       mountPath: /etc/config/entidades
+  #       readOnly: true 
 
   serviceType: ClusterIP
   
-  imagePullSecrets:
-    name: auth-quay-acm
+  # imagePullSecrets:
+  #   name: auth-quay-acm
 
   route:
     enabled: true

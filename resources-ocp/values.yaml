@@ -1,0 +1,176 @@
+app:
+  name: ma-test-service
+  labels:
+    app: ma-test-service
+    app.kubernetes.io/part-of: ma-test-service
+    app.kubernetes.io/instance: ma-test-service
+    app.kubernetes.io/version: "1.0.0-DEV"
+    app.openshift.io/runtime: Quarkus
+    app.kubernetes.io/component: ma-test-service
+    app.kubernetes.io/name: ma-test-service
+    app.openshift.io/runtime-version: "2.2"
+
+image:
+  name: registry-quay-registry-quay.apps.epico-mgmt-col-1.tmve.local/telefonica-pipelines/ma-test-service
+  tag: 1.0.8
+  stableTag: 1.0.8
+
+deploy:
+  enabledServerless: true
+  replicas: 0
+
+  serverless:
+    percent: 100
+    latestRevision: true
+    timeoutSeconds: 300
+    enableServiceLinks: false
+
+  ports:
+  - name: h2c
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+
+  resources: {}
+    
+  livenessProbe:
+    enabled: true
+    config:
+      httpGet:
+        path: /q/health/live
+        port: 8080
+      initialDelaySeconds: 40
+      periodSeconds: 5
+      failureThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    config:
+      httpGet:
+        path: /q/health/ready
+        port: 8080
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      failureThreshold: 1
+
+  env:
+  - name: TZ
+    value: America/Caracas
+  - name: QUARKUS_HTTP_PORT
+    value: '8080'    
+  - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
+    valueFrom:
+      secretKeyRef:
+        name: connection-telemetry
+        key: url
+  - name: KAFKA_SERVER
+    valueFrom:
+      secretKeyRef:
+        name: connection-kafka
+        key: url
+  - name: KAFKA_SSL_TRUSTORE_LOCATION
+    value: /etc/ssl/certs/kafka/client.truststore.jks
+  - name: KAFKA_SSL_TRUSTORE_TYPE
+    value: JKS
+  - name: KAFKA_SSL_KEYSTORE_LOCATION
+    value: /etc/ssl/certs/kafka/client.truststore.jks
+  - name: KAFKA_SSL_KEYSTORE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: kafka-jks-secret
+        key: jks-password
+  - name: KAFKA_SSL_TRUSTORE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: kafka-jks-secret
+        key: jks-password
+  - name: KAFKA_AUTO_COMMIT
+    value: 'false'
+  - name: KAFKA_MANUAL_COMMIT
+    value: 'true'                                                
+  - name: KAFKA_DELIVERY_TIMEOUT_MS
+    value: '10000'
+  - name: KAFKA_REQUEST_TIMEOUT_MS
+    value: '10000'
+  - name: KAFKA_MAX_BLOCK_MS
+    value: '10000'   
+  - name: CONFIG_PATH_ENTIDADES
+    value: '/etc/config/entidades/entidades.json'
+  - name: QUARKUS_DATASOURCE_JDBC_URL
+    valueFrom:
+      secretKeyRef:
+        name: connection-bd-postgres
+        key: url_connection_ods_schema
+  - name: QUARKUS_DATASOURCE_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: connection-bd-postgres
+        key: user_ods_consumer 
+  - name: QUARKUS_DATASOURCE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: connection-bd-postgres
+        key: pass_ods
+  - name: QUARKUS_DATASOURCE_JDBC_ACQUISITION_TIMEOUT
+    value: "3S"   
+                              
+  envFrom:
+    enabled: false
+
+  applicationProperties:
+    enabled: false
+    mountPath: /deployments/config/
+    properties: |-
+      ## Properties go here
+
+  volumes:
+    - name: kafka-cert-volume
+      secret:
+        secretName: kafka-jks-secret
+        items:
+          - key: jks-file
+            path: client.truststore.jks
+    - name: config-volume
+      secret:
+        secretName: kafka-consumer
+        items:
+          - key: entidades
+            path: entidades.json
+
+  volumeMounts:
+      - name: kafka-cert-volume
+        mountPath: /etc/ssl/certs/kafka
+        readOnly: true 
+      - name: config-volume
+        mountPath: /etc/config/entidades
+        readOnly: true 
+
+  serviceType: ClusterIP
+  
+  imagePullSecrets:
+    name: auth-quay-acm
+
+  route:
+    enabled: true
+    targetPort: http
+    tls:
+      enabled: false
+      termination: edge
+      insecureEdgeTerminationPolicy: Redirect
+      key:
+      caCertificate:
+      certificate:
+      destinationCACertificate:
+
+  secret:
+  - enabled: false
+
+autoscaling:
+  target: 40
+  metric: rps
+  autoscaling.knative.dev/min-scale: '1' 
+# autoscaling:
+#   enabled: false
+#   minReplicas: 0
+#   maxReplicas: 1
+#   targetCPUUtilizationPercentage: 80

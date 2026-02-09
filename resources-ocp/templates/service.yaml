@@ -1,0 +1,14 @@
+{{- if not .Values.deploy.enabledServerless }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    {{- toYaml .Values.app.labels | nindent 4}}
+spec:
+  type: {{ .Values.deploy.serviceType }}
+  selector:
+    deployment: {{ .Values.app.name }}
+  ports:
+    {{- tpl (toYaml .Values.deploy.ports) . | nindent 4 }}
+{{- end }}

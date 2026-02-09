@@ -1,0 +1,60 @@
+{{- if .Values.deploy.enabledServerless }}
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+    {{- toYaml .Values.app.labels | nindent 4}}
+spec:
+  template:
+    metadata:
+      labels:
+        {{- toYaml .Values.app.labels | nindent 8}}
+      annotations:
+        autoscaling.knative.dev/min-scale: '{{ .Values.deploy.replicas }}'
+        autoscaling.knative.dev/target: '{{ .Values.autoscaling.target }}'
+        autoscaling.knative.dev/metric: '{{ .Values.autoscaling.metric }}'
+    spec:
+      containers:
+      {{- if .Values.deploy.env }}
+      - env:
+        {{- tpl (toYaml .Values.deploy.env) . | nindent 10 }}
+      {{- end }}
+        image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+        name: {{ .Values.app.name }}
+        ports:
+        {{- range .Values.deploy.ports }}
+          - containerPort: {{ .targetPort }}
+            name: {{ .name }}
+            protocol: {{ .protocol }}
+        {{- end }}
+        {{- if .Values.deploy.livenessProbe.enabled }}
+        livenessProbe:
+        {{- tpl (toYaml .Values.deploy.livenessProbe.config) . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.deploy.readinessProbe.enabled }}
+        readinessProbe:
+        {{- tpl (toYaml .Values.deploy.readinessProbe.config) . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.deploy.resources }}
+        resources:
+            {{- toYaml .Values.deploy.resources | nindent 10 }}
+        {{- end }}
+        {{- if .Values.deploy.volumeMounts }}
+        volumeMounts: 
+          {{- toYaml .Values.deploy.volumeMounts | nindent 10 }}
+        {{- end }} 
+      enableServiceLinks: {{ .Values.deploy.serverless.enableServiceLinks }}
+      timeoutSeconds: {{ .Values.deploy.serverless.timeoutSeconds }}
+      {{- if .Values.deploy.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.deploy.imagePullSecrets.name }}
+      {{- end }}
+      {{- if .Values.deploy.volumes }}
+      volumes: 
+        {{- toYaml .Values.deploy.volumes | nindent 8 }}
+      {{- end }}
+  traffic:
+    - latestRevision: {{ .Values.deploy.serverless.latestRevision }}
+      percent: {{ .Values.deploy.serverless.percent }}
+{{- end }}

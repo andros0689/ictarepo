@@ -1,0 +1,70 @@
+{{- if not .Values.deploy.enabledServerless }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.app.name }}
+  labels:
+   {{- toYaml .Values.app.labels | nindent 4}}
+spec:
+  replicas: {{ .Values.deploy.replicas }}
+  selector:
+    matchLabels:
+      deployment: {{ .Values.app.name }}
+  template:
+    metadata:
+      labels:
+         deployment: {{ .Values.app.name }}
+    spec:
+      containers:
+        - name: {{ .Values.app.name }}
+          image: {{ .Values.image.name }}:{{ .Values.image.tag }}
+          ports:
+{{- range .Values.deploy.ports }}
+            - name: {{ .name }}
+              containerPort: {{ .targetPort }}
+              protocol: {{ .protocol }}
+{{- end }}
+{{- if .Values.deploy.resources }}
+          resources:
+            {{- toYaml .Values.deploy.resources | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.livenessProbe.enabled }}
+          livenessProbe:
+            {{- tpl (toYaml .Values.deploy.livenessProbe.config) . | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.readinessProbe.enabled }}
+          readinessProbe:
+            {{- tpl (toYaml .Values.deploy.readinessProbe.config) . | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.env }}
+          env:
+            {{- tpl (toYaml .Values.deploy.env) . | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.envFrom.enabled }}
+          envFrom:
+            {{- tpl (toYaml .Values.deploy.envFrom) . | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.applicationProperties.enabled }}
+          volumeMounts:
+            - name: application-properties
+              mountPath: {{ .Values.deploy.applicationProperties.mountPath }}
+{{- end }}
+{{- if .Values.deploy.volumeMounts }}
+          volumeMounts:
+            {{- tpl (toYaml .Values.deploy.volumeMounts) . | nindent 12 }}
+{{- end }}
+{{- if .Values.deploy.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.deploy.imagePullSecrets.name }}
+{{- end }}
+{{- if .Values.deploy.applicationProperties.enabled }}
+      volumes:
+        - name: application-properties
+          configMap:
+            name: {{ .Values.app.name }}
+{{- end }}
+{{- if .Values.deploy.volumes }}
+      volumes:
+        {{- tpl (toYaml .Values.deploy.volumes) . | nindent 8 }}
+{{- end }}
+{{- end }}

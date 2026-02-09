@@ -16,8 +16,8 @@ image:
   stableTag: 0.0.1-SNAPSHOT
 
 deploy:
-  enabledServerless: true
-  replicas: 0
+  enabledServerless: false
+  replicas: 1
 
   serverless:
     percent: 100
